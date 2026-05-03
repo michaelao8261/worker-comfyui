@@ -24,8 +24,13 @@ echo "Downloading FLUX models into $BASE ..."
 [ -f "$BASE/loras/$LORA_NAME" ] || wget -O "$BASE/loras/$LORA_NAME" "$LORA_URL"
 
 echo "All models are present."
+ls -lh "$BASE/unet/flux1-dev.safetensors" \
+      "$BASE/vae/ae.safetensors" \
+      "$BASE/clip/clip_l.safetensors" \
+      "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" \
+      "$BASE/loras/$LORA_NAME"
 # --- end download base models + LoRA ---
-ls
+
 
 
 
