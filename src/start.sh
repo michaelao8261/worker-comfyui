@@ -1,42 +1,30 @@
 #!/usr/bin/env bash
 
-# --- download LoRA ---
-LORA_URL="https://v3b.fal.media/files/b/0a989e25/oLC-jlPa2WPrOCR45DAeM_pytorch_lora_weights.safetensors"
-LORA_NAME="pytorch_lora_weights.safetensors"
-
-if [ -d "/workspace/ComfyUI/models/loras" ]; then
-  LORA_DIR="/workspace/ComfyUI/models/loras"
-elif [ -d "/ComfyUI/models/loras" ]; then
-  LORA_DIR="/ComfyUI/models/loras"
-else
-  echo "ERROR: cannot find ComfyUI loras folder"
-  exit 1
-fi
-
-mkdir -p "$LORA_DIR"
-echo "Downloading LoRA to: $LORA_DIR/$LORA_NAME"
-wget -O "$LORA_DIR/$LORA_NAME" "$LORA_URL"
-# --- end download LoRA ---
-
-# --- download base models (FLUX/CLIP/VAE) ---
+# --- download base models + LoRA (FLUX/CLIP/VAE) ---
 BASE="/comfyui/models"
 
 mkdir -p "$BASE/unet" "$BASE/clip" "$BASE/vae" "$BASE/loras"
 
-# TODO: replace these URLs with real direct download links
-UNET_URL="PASTE_UNET_DIRECT_URL_HERE"
-CLIP_L_URL="PASTE_CLIP_L_DIRECT_URL_HERE"
-T5_URL="PASTE_T5_DIRECT_URL_HERE"
-VAE_URL="PASTE_VAE_DIRECT_URL_HERE"
+UNET_URL="https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors"
+VAE_URL="https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/ae.safetensors"
+CLIP_L_URL="https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors"
+T5_URL="https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors"
 
-wget -O "$BASE/unet/flux1-dev.safetensors" "$UNET_URL"
-wget -O "$BASE/clip/clip_l.safetensors" "$CLIP_L_URL"
-wget -O "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" "$T5_URL"
-wget -O "$BASE/vae/ae.safetensors" "$VAE_URL"
+LORA_URL="https://v3b.fal.media/files/b/0a989e25/oLC-jlPa2WPrOCR45DAeM_pytorch_lora_weights.safetensors"
+LORA_NAME="pytorch_lora_weights.safetensors"
 
-# LoRA (твой блок можно оставить как есть, но лучше тоже в /comfyui)
-wget -O "$BASE/loras/pytorch_lora_weights.safetensors" "$LORA_URL"
-# --- end base models ---
+echo "Downloading FLUX models into $BASE ..."
+
+# Скачиваем только если файла еще нет (чтобы не тратить время на каждый холодный старт)
+[ -f "$BASE/unet/flux1-dev.safetensors" ] || wget -O "$BASE/unet/flux1-dev.safetensors" "$UNET_URL"
+[ -f "$BASE/vae/ae.safetensors" ] || wget -O "$BASE/vae/ae.safetensors" "$VAE_URL"
+[ -f "$BASE/clip/clip_l.safetensors" ] || wget -O "$BASE/clip/clip_l.safetensors" "$CLIP_L_URL"
+[ -f "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" ] || wget -O "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" "$T5_URL"
+[ -f "$BASE/loras/$LORA_NAME" ] || wget -O "$BASE/loras/$LORA_NAME" "$LORA_URL"
+
+echo "All models are present."
+# --- end download base models + LoRA ---
+
 
 
 # Start SSH server if PUBLIC_KEY is set (enables remote access and dev-sync.sh)
