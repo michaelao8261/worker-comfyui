@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -x
 
 # --- download base models + LoRA (FLUX/CLIP/VAE) ---
 BASE="/comfyui/models"
@@ -14,25 +15,62 @@ T5_URL="https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5
 LORA_URL="https://v3b.fal.media/files/b/0a989e25/oLC-jlPa2WPrOCR45DAeM_pytorch_lora_weights.safetensors"
 LORA_NAME="pytorch_lora_weights.safetensors"
 
+# Wget options for unstable networks / rate limits
+WGET_OPTS=(--tries=20 --waitretry=5 --retry-connrefused --timeout=30 --progress=dot:giga)
+
+# Optional HuggingFace token (set in Runpod endpoint env as HUGGINGFACE_ACCESS_TOKEN)
+HF_TOKEN="${HUGGINGFACE_ACCESS_TOKEN:-}"
+HF_HEADER=()
+if [ -n "$HF_TOKEN" ]; then
+  HF_HEADER=(--header="Authorization: Bearer ${HF_TOKEN}")
+fi
+
+download() {
+  local out="$1"
+  local url="$2"
+
+  # Skip if file exists and is non-empty
+  if [ -s "$out" ]; then
+    echo "Already exists: $out"
+    return 0
+  fi
+
+  # Ensure folder exists
+  mkdir -p "$(dirname "$out")"
+
+  echo "Downloading: $url -> $out"
+
+  # First try WITH token header (if present), else without
+  if ! wget "${WGET_OPTS[@]}" "${HF_HEADER[@]}" -O "$out" "$url"; then
+    echo "First download attempt failed for $url"
+    echo "Retrying without HF header (in case token/header causes issues)..."
+    rm -f "$out" || true
+    wget "${WGET_OPTS[@]}" -O "$out" "$url"
+  fi
+
+  # Basic sanity check
+  if [ ! -s "$out" ]; then
+    echo "ERROR: Downloaded file is empty: $out"
+    exit 1
+  fi
+}
+
 echo "Downloading FLUX models into $BASE ..."
 
-# Скачиваем только если файла еще нет (чтобы не тратить время на каждый холодный старт)
-[ -f "$BASE/unet/flux1-dev.safetensors" ] || wget -O "$BASE/unet/flux1-dev.safetensors" "$UNET_URL"
-[ -f "$BASE/vae/ae.safetensors" ] || wget -O "$BASE/vae/ae.safetensors" "$VAE_URL"
-[ -f "$BASE/clip/clip_l.safetensors" ] || wget -O "$BASE/clip/clip_l.safetensors" "$CLIP_L_URL"
-[ -f "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" ] || wget -O "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" "$T5_URL"
-[ -f "$BASE/loras/$LORA_NAME" ] || wget -O "$BASE/loras/$LORA_NAME" "$LORA_URL"
+download "$BASE/unet/flux1-dev.safetensors" "$UNET_URL"
+download "$BASE/vae/ae.safetensors" "$VAE_URL"
+download "$BASE/clip/clip_l.safetensors" "$CLIP_L_URL"
+download "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" "$T5_URL"
+download "$BASE/loras/$LORA_NAME" "$LORA_URL"
 
-echo "All models are present."
-ls -lh "$BASE/unet/flux1-dev.safetensors" \
-      "$BASE/vae/ae.safetensors" \
-      "$BASE/clip/clip_l.safetensors" \
-      "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" \
-      "$BASE/loras/$LORA_NAME"
+echo "All models are present:"
+ls -lh \
+  "$BASE/unet/flux1-dev.safetensors" \
+  "$BASE/vae/ae.safetensors" \
+  "$BASE/clip/clip_l.safetensors" \
+  "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" \
+  "$BASE/loras/$LORA_NAME"
 # --- end download base models + LoRA ---
-
-
-
 
 
 # Start SSH server if PUBLIC_KEY is set (enables remote access and dev-sync.sh)
