@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # --- download base models + LoRA (FLUX/CLIP/VAE) ---
 BASE="/comfyui/models"
