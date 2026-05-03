@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+# --- download LoRA ---
+LORA_URL="https://v3b.fal.media/files/b/0a989e25/oLC-jlPa2WPrOCR45DAeM_pytorch_lora_weights.safetensors"
+LORA_NAME="pytorch_lora_weights.safetensors"
+
+if [ -d "/workspace/ComfyUI/models/loras" ]; then
+  LORA_DIR="/workspace/ComfyUI/models/loras"
+elif [ -d "/ComfyUI/models/loras" ]; then
+  LORA_DIR="/ComfyUI/models/loras"
+else
+  echo "ERROR: cannot find ComfyUI loras folder"
+  exit 1
+fi
+
+mkdir -p "$LORA_DIR"
+echo "Downloading LoRA to: $LORA_DIR/$LORA_NAME"
+wget -O "$LORA_DIR/$LORA_NAME" "$LORA_URL"
+# --- end download LoRA ---
+
+
 # Start SSH server if PUBLIC_KEY is set (enables remote access and dev-sync.sh)
 if [ -n "$PUBLIC_KEY" ]; then
     mkdir -p ~/.ssh
