@@ -25,6 +25,8 @@ echo "Downloading FLUX models into $BASE ..."
 
 echo "All models are present."
 # --- end download base models + LoRA ---
+ls
+
 
 
 
