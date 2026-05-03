@@ -29,30 +29,35 @@ download() {
   local out="$1"
   local url="$2"
 
-  # Skip if file exists and is non-empty
+  # If file exists and is non-empty, assume it's good
   if [ -s "$out" ]; then
     echo "Already exists: $out"
     return 0
   fi
 
-  # Ensure folder exists
   mkdir -p "$(dirname "$out")"
 
-  echo "Downloading: $url -> $out"
+  local tmp="${out}.part"
+  rm -f "$tmp" || true
+
+  echo "Downloading: $url -> $tmp"
 
   # First try WITH token header (if present), else without
-  if ! wget "${WGET_OPTS[@]}" "${HF_HEADER[@]}" -O "$out" "$url"; then
+  if ! wget "${WGET_OPTS[@]}" "${HF_HEADER[@]}" -O "$tmp" "$url"; then
     echo "First download attempt failed for $url"
     echo "Retrying without HF header (in case token/header causes issues)..."
-    rm -f "$out" || true
-    wget "${WGET_OPTS[@]}" -O "$out" "$url"
+    rm -f "$tmp" || true
+    wget "${WGET_OPTS[@]}" -O "$tmp" "$url"
   fi
 
-  # Basic sanity check
-  if [ ! -s "$out" ]; then
-    echo "ERROR: Downloaded file is empty: $out"
+  if [ ! -s "$tmp" ]; then
+    echo "ERROR: Downloaded temp file is empty: $tmp"
+    rm -f "$tmp" || true
     exit 1
   fi
+
+  # Atomically move into place only when fully downloaded
+  mv -f "$tmp" "$out"
 }
 
 echo "Downloading FLUX models into $BASE ..."
