@@ -18,6 +18,26 @@ echo "Downloading LoRA to: $LORA_DIR/$LORA_NAME"
 wget -O "$LORA_DIR/$LORA_NAME" "$LORA_URL"
 # --- end download LoRA ---
 
+# --- download base models (FLUX/CLIP/VAE) ---
+BASE="/comfyui/models"
+
+mkdir -p "$BASE/unet" "$BASE/clip" "$BASE/vae" "$BASE/loras"
+
+# TODO: replace these URLs with real direct download links
+UNET_URL="PASTE_UNET_DIRECT_URL_HERE"
+CLIP_L_URL="PASTE_CLIP_L_DIRECT_URL_HERE"
+T5_URL="PASTE_T5_DIRECT_URL_HERE"
+VAE_URL="PASTE_VAE_DIRECT_URL_HERE"
+
+wget -O "$BASE/unet/flux1-dev.safetensors" "$UNET_URL"
+wget -O "$BASE/clip/clip_l.safetensors" "$CLIP_L_URL"
+wget -O "$BASE/clip/t5xxl_fp8_e4m3fn.safetensors" "$T5_URL"
+wget -O "$BASE/vae/ae.safetensors" "$VAE_URL"
+
+# LoRA (твой блок можно оставить как есть, но лучше тоже в /comfyui)
+wget -O "$BASE/loras/pytorch_lora_weights.safetensors" "$LORA_URL"
+# --- end base models ---
+
 
 # Start SSH server if PUBLIC_KEY is set (enables remote access and dev-sync.sh)
 if [ -n "$PUBLIC_KEY" ]; then
